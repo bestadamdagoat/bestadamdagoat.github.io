@@ -1,0 +1,4 @@
+This is a Brave Rewards publisher verification file.
+
+Domain: bestadamdagoat.com 
+Token: 2cf024b74994bf8a9403d2f5569e206497b41fac608de400caa6dfe59a75bb21
