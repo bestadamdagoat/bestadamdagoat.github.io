@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Texas Vanity Plate Checker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        header {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 10px;
+        }
+
+        .main-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .settings-pane {
+            text-align: right;
+        }
+
+        .input-pane {
+            margin-bottom: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+        }
+
+        #check-button {
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+        }
+
+        #check-button:hover {
+            background-color: #555;
+        }
+
+        .result-pane ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .result-pane li {
+            margin-bottom: 10px;
+        }
+
+        .result-pane button {
+            background-color: #333;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .result-pane button:hover {
+            background-color: #555;
+        }
+
+        .loading-bar {
+            background-color: #0074d9;
+            height: 10px;
+            width: 0;
+            transition: width 0.2s;
+        }
+
+        .download-button,
+        .copy-button {
+            background-color: #333;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .download-button:hover,
+        .copy-button:hover {
+            background-color: #555;
+        }
+
+        .purchase-button,
+        .copy-button {
+            background-color: #333;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .purchase-button:hover,
+        .copy-button:hover {
+            background-color: #555;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Texas Vanity Plate Checker</h1>
+    </header>
+
+    <div class="main-content">
+        <div class="settings-pane">
+            <button id="toggle-settings">Toggle Settings</button>
+            <div id="settings" style="display: none;">
+                <label for="custom-domain">Custom Domain:</label>
+                <input type="text" id="custom-domain" value="myplates.bestadam.workers.dev" style="width: 250px;">
+            </div>
+        </div>
+
+        <div class="input-pane">
+            <textarea id="plate-list" placeholder="Enter plates to check (one per line)"></textarea>
+            <button id="check-button">Check Plates</button>
+        </div>
+
+        <div class="result-pane" style="display: none;">
+            <h2>Working Plates:</h2>
+            <div class="loading-bar"></div>
+            <ul id="working-plates">
+                <!-- Results go here -->
+            </ul>
+            <button class="download-button" id="download-button">Download List</button>
+            <button class="copy-button" id="copy-all-button">Copy All</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const toggleSettingsButton = document.getElementById('toggle-settings');
+            const settings = document.getElementById('settings');
+            const checkButton = document.getElementById('check-button');
+            const plateList = document.getElementById('plate-list');
+            const resultPane = document.querySelector('.result-pane');
+            const workingPlatesList = document.getElementById('working-plates');
+            const customDomainInput = document.getElementById('custom-domain');
+            const loadingBar = document.querySelector('.loading-bar');
+            const downloadButton = document.getElementById('download-button');
+            const copyAllButton = document.getElementById('copy-all-button');
+
+            toggleSettingsButton.addEventListener('click', function () {
+                if (settings.style.display === 'none') {
+                    settings.style.display = 'block';
+                } else {
+                    settings.style.display = 'none';
+                }
+            });
+
+            checkButton.addEventListener('click', async function () {
+                const plates = plateList.value.split('\n').map(plate => plate.trim());
+                workingPlatesList.innerHTML = ''; // Clear previous results
+                loadingBar.style.width = '0%'; // Reset loading bar
+                downloadButton.style.display = 'none'; // Hide download button
+                copyAllButton.style.display = 'none'; // Hide copy all button
+
+                const customDomain = customDomainInput.value;
+                const totalPlates = plates.length;
+                let platesChecked = 0;
+
+                for (const plate of plates) {
+                    const apiUrl = `https://${customDomain}/api/licenseplates/passenger/classic-black-silver/${plate}`;
+                    try {
+                        const response = await fetch(apiUrl);
+                        const data = await response.json();
+                        platesChecked++;
+
+                        if (data.status === 'available') {
+                            const listItem = document.createElement('li');
+                            listItem.textContent = plate;
+
+                            const copyButton = document.createElement('button');
+                            copyButton.textContent = 'Copy';
+                            copyButton.className = 'copy-button';
+                            copyButton.addEventListener('click', function () {
+                                copyToClipboard(plate);
+                            });
+
+                            const purchaseButton = document.createElement('button');
+                            purchaseButton.textContent = 'Purchase';
+                            purchaseButton.className = 'purchase-button';
+                            purchaseButton.addEventListener('click', function () {
+                                window.open(`https://www.myplates.com/design/personalized/passenger/classic-black-silver/${plate}`, '_blank');
+                            });
+
+                            listItem.appendChild(copyButton);
+                            listItem.appendChild(purchaseButton);
+                            workingPlatesList.appendChild(listItem);
+                        }
+
+                        // Update the loading bar
+                        const progress = (platesChecked / totalPlates) * 100;
+                        loadingBar.style.width = `${progress}%`;
+
+                        // Show download and copy all buttons when all plates are checked
+                        if (platesChecked === totalPlates) {
+                            downloadButton.style.display = 'inline-block';
+                            copyAllButton.style.display = 'inline-block';
+                        }
+                    } catch (error) {
+                        console.error(`Error checking plate ${plate}: ${error}`);
+                    }
+                }
+
+                resultPane.style.display = 'block';
+            });
+
+            // Function to copy text to clipboard
+            function copyToClipboard(text) {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+            }
+
+            copyAllButton.addEventListener('click', function () {
+                const workingPlateItems = workingPlatesList.querySelectorAll('li');
+                const workingPlateText = Array.from(workingPlateItems)
+                    .map(item => item.textContent.split('CopyPurchase')[0].trim()) // Extract plate numbers
+                    .join('\n');
+                copyToClipboard(workingPlateText);
+            });
+
+            // Download all working plates as a text document
+            downloadButton.addEventListener('click', function () {
+                const workingPlateItems = workingPlatesList.querySelectorAll('li');
+                const workingPlateText = Array.from(workingPlateItems)
+                    .map(item => item.textContent.split('CopyPurchase')[0].trim()) // Extract plate numbers
+                    .join('\n');
+                const blob = new Blob([workingPlateText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'working_plates.txt';
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+        });
+    </script>
+</body>
+
+</html>
