@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tesla Speaker Test</title>
+  <style>
+    :root {
+      --bg: #0b0d10;
+      --panel: #151922;
+      --panel2: #1c2230;
+      --text: #f3f5f7;
+      --muted: #aab3c2;
+      --accent: #4da3ff;
+      --accent2: #7dd3fc;
+      --danger: #ff6b6b;
+      --ok: #3ddc97;
+      --border: #2a3244;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: linear-gradient(180deg, #0b0d10, #111726);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    h1 { margin: 0 0 8px; font-size: 2rem; }
+    p { color: var(--muted); line-height: 1.5; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .card {
+      background: rgba(21,25,34,.92);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+    }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    button, select, input[type="range"] {
+      accent-color: var(--accent);
+    }
+    button {
+      border: 1px solid var(--border);
+      background: var(--panel2);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: .95rem;
+    }
+    button.primary { background: linear-gradient(180deg, #1e4e91, #163964); }
+    button.stop { background: linear-gradient(180deg, #7d2626, #5a1717); }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .section-title {
+      margin: 0 0 10px;
+      font-size: 1.05rem;
+    }
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: 10px;
+    }
+    .small { font-size: .9rem; color: var(--muted); }
+    .slab { padding: 12px; background: rgba(255,255,255,.03); border: 1px solid var(--border); border-radius: 14px; }
+    label { display: block; margin: 10px 0 6px; color: var(--muted); }
+    .status { font-weight: 600; color: var(--accent2); }
+    .car {
+      position: relative;
+      aspect-ratio: 12 / 7;
+      background: radial-gradient(circle at 50% 50%, rgba(77,163,255,.12), transparent 42%), #0f141c;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+    .car-body {
+      position: absolute;
+      inset: 12% 15%;
+      border: 2px solid #5b6478;
+      border-radius: 28% 28% 22% 22% / 18% 18% 16% 16%;
+      background: linear-gradient(180deg, #202737, #121722);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.03);
+    }
+    .seatline {
+      position: absolute;
+      left: 50%; top: 15%; bottom: 15%; width: 1px; background: rgba(255,255,255,.08);
+    }
+    .front-rear {
+      position: absolute;
+      left: 18%; right: 18%; top: 50%; height: 1px; background: rgba(255,255,255,.08);
+    }
+    .speaker {
+      position: absolute;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: #334155; border: 1px solid #64748b;
+      box-shadow: 0 0 0 0 rgba(77,163,255,.0);
+      transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+    .speaker.active {
+      background: var(--accent2);
+      transform: scale(1.25);
+      box-shadow: 0 0 0 10px rgba(77,163,255,.14);
+    }
+    .speaker-label {
+      position: absolute;
+      font-size: .75rem;
+      color: #c7d2fe;
+      transform: translate(-50%, -50%);
+      white-space: nowrap;
+    }
+    .legend { margin-top: 10px; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .warning {
+      border-left: 4px solid #f59e0b;
+      padding-left: 12px;
+      color: #fcd34d;
+    }
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+      .preset-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Tesla Speaker Test</h1>
+    <p>This page generates test tones, pink noise, sweeps, and spoken prompts to help you check <strong>left/right</strong>, approximate <strong>front/rear</strong>, and moving sound paths in your car. Best results: set your Tesla audio <strong>Balance</strong> to center and <strong>Immersive Sound</strong> to Off/Low before testing.</p>
+
+    <div class="grid">
+      <div class="card">
+        <h2 class="section-title">Quick tests</h2>
+        <div class="preset-grid">
+          <button data-test="front-left">Front Left</button>
+          <button data-test="front-center">Front Center</button>
+          <button data-test="front-right">Front Right</button>
+          <button data-test="rear-left">Rear Left</button>
+          <button data-test="rear-center">Rear Center</button>
+          <button data-test="rear-right">Rear Right</button>
+          <button data-test="left-sweep">Left Sweep</button>
+          <button data-test="right-sweep">Right Sweep</button>
+          <button data-test="full-orbit">Full Orbit</button>
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+          <button id="runSequence" class="primary">Run full sequence</button>
+          <button id="speakSequence">Run spoken sequence</button>
+          <button id="stopAll" class="stop">Stop</button>
+        </div>
+
+        <div class="slab" style="margin-top:14px;">
+          <label for="signalType">Signal</label>
+          <select id="signalType">
+            <option value="noise">Pink noise</option>
+            <option value="tone">Tone</option>
+            <option value="sweep">Sweep</option>
+            <option value="speech">Speech cue</option>
+          </select>
+
+          <label for="freq">Tone frequency: <span id="freqVal">750</span> Hz</label>
+          <input id="freq" type="range" min="80" max="4000" step="10" value="750" />
+
+          <label for="duration">Step duration: <span id="durationVal">2.0</span> s</label>
+          <input id="duration" type="range" min="0.5" max="5" step="0.1" value="2.0" />
+
+          <label for="volume">Volume: <span id="volumeVal">70</span>%</label>
+          <input id="volume" type="range" min="5" max="100" step="1" value="70" />
+
+          <label for="rearBias">Rear simulation strength: <span id="rearBiasVal">55</span>%</label>
+          <input id="rearBias" type="range" min="0" max="100" step="1" value="55" />
+        </div>
+
+        <div class="legend small">
+          <div>Current status: <span class="status" id="status">Idle</span></div>
+          <div>Last target: <span class="mono" id="lastTarget">none</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title">Approximate speaker map</h2>
+        <div class="car" id="carMap">
+          <div class="car-body"></div>
+          <div class="seatline"></div>
+          <div class="front-rear"></div>
+
+          <div class="speaker" id="spk-front-left" style="left:20%; top:24%;"></div>
+          <div class="speaker" id="spk-front-center" style="left:50%; top:20%;"></div>
+          <div class="speaker" id="spk-front-right" style="left:80%; top:24%;"></div>
+          <div class="speaker" id="spk-rear-left" style="left:22%; top:72%;"></div>
+          <div class="speaker" id="spk-rear-center" style="left:50%; top:78%;"></div>
+          <div class="speaker" id="spk-rear-right" style="left:78%; top:72%;"></div>
+
+          <div class="speaker-label" style="left:20%; top:15%;">front left</div>
+          <div class="speaker-label" style="left:50%; top:11%;">front center</div>
+          <div class="speaker-label" style="left:80%; top:15%;">front right</div>
+          <div class="speaker-label" style="left:22%; top:84%;">rear left</div>
+          <div class="speaker-label" style="left:50%; top:90%;">rear center</div>
+          <div class="speaker-label" style="left:78%; top:84%;">rear right</div>
+        </div>
+        <p class="small warning">This is a browser-based approximation. A web page can usually pan a stereo signal left/right, but it cannot directly address each physical Tesla speaker. Tesla's own DSP, balance/fade, and immersive processing decide how the stereo stream is distributed.</p>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const statusEl = $('status');
+  const lastTargetEl = $('lastTarget');
+  const signalTypeEl = $('signalType');
+  const freqEl = $('freq');
+  const durationEl = $('duration');
+  const volumeEl = $('volume');
+  const rearBiasEl = $('rearBias');
+  const freqVal = $('freqVal');
+  const durationVal = $('durationVal');
+  const volumeVal = $('volumeVal');
+  const rearBiasVal = $('rearBiasVal');
+
+  let audioCtx;
+  let masterGain;
+  let activeNodes = [];
+  let currentTimeouts = [];
+
+  const positions = {
+    'front-left': { pan: -1, rear: 0, speakers: ['front-left'] },
+    'front-center': { pan: 0, rear: 0, speakers: ['front-center'] },
+    'front-right': { pan: 1, rear: 0, speakers: ['front-right'] },
+    'rear-left': { pan: -0.9, rear: 1, speakers: ['rear-left'] },
+    'rear-center': { pan: 0, rear: 1, speakers: ['rear-center'] },
+    'rear-right': { pan: 0.9, rear: 1, speakers: ['rear-right'] },
+  };
+
+  function setStatus(text) { statusEl.textContent = text; }
+
+  function updateDisplays() {
+    freqVal.textContent = freqEl.value;
+    durationVal.textContent = Number(durationEl.value).toFixed(1);
+    volumeVal.textContent = volumeEl.value;
+    rearBiasVal.textContent = rearBiasEl.value;
+  }
+  [freqEl, durationEl, volumeEl, rearBiasEl].forEach(el => el.addEventListener('input', updateDisplays));
+  updateDisplays();
+
+  function ensureAudio() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      masterGain = audioCtx.createGain();
+      masterGain.gain.value = Number(volumeEl.value) / 100;
+      masterGain.connect(audioCtx.destination);
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    masterGain.gain.setTargetAtTime(Number(volumeEl.value) / 100, audioCtx.currentTime, 0.02);
+  }
+
+  function clearHighlights() {
+    document.querySelectorAll('.speaker').forEach(el => el.classList.remove('active'));
+  }
+
+  function highlight(names) {
+    clearHighlights();
+    names.forEach(name => {
+      const el = $('spk-' + name);
+      if (el) el.classList.add('active');
+    });
+  }
+
+  function stopAll() {
+    currentTimeouts.forEach(t => clearTimeout(t));
+    currentTimeouts = [];
+    activeNodes.forEach(stopFn => {
+      try { stopFn(); } catch (_) {}
+    });
+    activeNodes = [];
+    clearHighlights();
+    setStatus('Idle');
+    lastTargetEl.textContent = 'none';
+  }
+
+  function noiseBuffer(ctx, seconds = 2) {
+    const length = Math.ceil(ctx.sampleRate * seconds);
+    const buffer = ctx.createBuffer(2, length, ctx.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const data = buffer.getChannelData(ch);
+      let b0=0, b1=0, b2=0, b3=0, b4=0, b5=0, b6=0;
+      for (let i = 0; i < length; i++) {
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99886 * b0 + white * 0.0555179;
+        b1 = 0.99332 * b1 + white * 0.0750759;
+        b2 = 0.96900 * b2 + white * 0.1538520;
+        b3 = 0.86650 * b3 + white * 0.3104856;
+        b4 = 0.55000 * b4 + white * 0.5329522;
+        b5 = -0.7616 * b5 - white * 0.0168980;
+        data[i] = (b0+b1+b2+b3+b4+b5+b6+white*0.5362) * 0.11;
+        b6 = white * 0.115926;
+      }
+    }
+    return buffer;
+  }
+
+  function envelope(gainNode, duration) {
+    const now = audioCtx.currentTime;
+    gainNode.gain.cancelScheduledValues(now);
+    gainNode.gain.setValueAtTime(0.0001, now);
+    gainNode.gain.exponentialRampToValueAtTime(1.0, now + 0.03);
+    gainNode.gain.setValueAtTime(1.0, now + Math.max(0.03, duration - 0.06));
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+  }
+
+  function connectSpatial(source, target, duration) {
+    const preGain = audioCtx.createGain();
+    const panner = audioCtx.createStereoPanner();
+    const rearFilter = audioCtx.createBiquadFilter();
+    const rearGain = audioCtx.createGain();
+    const mixGain = audioCtx.createGain();
+
+    rearFilter.type = 'lowpass';
+    rearFilter.frequency.value = 900;
+    rearGain.gain.value = (target.rear || 0) * (Number(rearBiasEl.value) / 100) * 0.7;
+    panner.pan.value = target.pan || 0;
+    mixGain.gain.value = 0.95;
+
+    source.connect(preGain);
+    preGain.connect(panner);
+    panner.connect(mixGain);
+
+    // Rear approximation: slightly darker, delayed-feeling image by blending filtered signal.
+    preGain.connect(rearFilter);
+    rearFilter.connect(rearGain);
+    rearGain.connect(mixGain);
+
+    const env = audioCtx.createGain();
+    envelope(env, duration);
+    mixGain.connect(env);
+    env.connect(masterGain);
+
+    return () => {
+      try { source.disconnect(); } catch (_) {}
+      [preGain, panner, rearFilter, rearGain, mixGain, env].forEach(n => { try { n.disconnect(); } catch (_) {} });
+    };
+  }
+
+  function playTone(targetName, durationSec) {
+    ensureAudio();
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = Number(freqEl.value);
+    const stopRouting = connectSpatial(osc, positions[targetName], durationSec);
+    osc.start();
+    osc.stop(audioCtx.currentTime + durationSec + 0.02);
+    const stopFn = () => { try { osc.stop(); } catch (_) {}; stopRouting(); };
+    activeNodes.push(stopFn);
+    return stopFn;
+  }
+
+  function playNoise(targetName, durationSec) {
+    ensureAudio();
+    const src = audioCtx.createBufferSource();
+    src.buffer = noiseBuffer(audioCtx, durationSec + 0.1);
+    const stopRouting = connectSpatial(src, positions[targetName], durationSec);
+    src.start();
+    src.stop(audioCtx.currentTime + durationSec + 0.02);
+    const stopFn = () => { try { src.stop(); } catch (_) {}; stopRouting(); };
+    activeNodes.push(stopFn);
+    return stopFn;
+  }
+
+  function playSweep(targetName, durationSec) {
+    ensureAudio();
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(5000, audioCtx.currentTime + durationSec);
+    const stopRouting = connectSpatial(osc, positions[targetName], durationSec);
+    osc.start();
+    osc.stop(audioCtx.currentTime + durationSec + 0.02);
+    const stopFn = () => { try { osc.stop(); } catch (_) {}; stopRouting(); };
+    activeNodes.push(stopFn);
+    return stopFn;
+  }
+
+  function speak(text) {
+    if (!('speechSynthesis' in window)) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.95;
+    u.pitch = 1.0;
+    speechSynthesis.speak(u);
+  }
+
+  function runSingle(targetName, signal = signalTypeEl.value, durationSec = Number(durationEl.value)) {
+    stopAll();
+    lastTargetEl.textContent = targetName;
+    highlight(positions[targetName]?.speakers || []);
+    setStatus(`Playing ${signal} @ ${targetName}`);
+
+    if (signal === 'speech') {
+      speak(targetName.replace('-', ' '));
+      currentTimeouts.push(setTimeout(() => setStatus('Idle'), Math.round(durationSec * 1000)));
+      return;
+    }
+    if (signal === 'tone') return playTone(targetName, durationSec);
+    if (signal === 'sweep') return playSweep(targetName, durationSec);
+    return playNoise(targetName, durationSec);
+  }
+
+  async function runSequence(spoken = false) {
+    stopAll();
+    ensureAudio();
+    const order = ['front-left','front-center','front-right','rear-right','rear-center','rear-left'];
+    const durationSec = Number(durationEl.value);
+    let offset = 0;
+    order.forEach((targetName, idx) => {
+      currentTimeouts.push(setTimeout(() => {
+        stopAll();
+        lastTargetEl.textContent = targetName;
+        highlight(positions[targetName].speakers);
+        setStatus(`Step ${idx + 1}/${order.length}: ${targetName}`);
+        if (spoken) {
+          speak(targetName.replace('-', ' '));
+        } else {
+          const signal = signalTypeEl.value === 'speech' ? 'noise' : signalTypeEl.value;
+          if (signal === 'tone') playTone(targetName, durationSec);
+          else if (signal === 'sweep') playSweep(targetName, durationSec);
+          else playNoise(targetName, durationSec);
+        }
+      }, offset));
+      offset += Math.round((durationSec + 0.35) * 1000);
+    });
+    currentTimeouts.push(setTimeout(() => {
+      stopAll();
+      setStatus('Sequence complete');
+    }, offset));
+  }
+
+  function runMotionPattern(kind) {
+    stopAll();
+    ensureAudio();
+    const durationSec = Number(durationEl.value);
+    const stepMs = 180;
+    let points = [];
+
+    if (kind === 'left-sweep') points = ['front-left','rear-left','rear-left','front-left'];
+    if (kind === 'right-sweep') points = ['front-right','rear-right','rear-right','front-right'];
+    if (kind === 'full-orbit') points = ['front-left','front-center','front-right','rear-right','rear-center','rear-left'];
+
+    let i = 0;
+    const loops = Math.max(1, Math.floor((durationSec * 1000) / stepMs));
+    const signal = signalTypeEl.value === 'speech' ? 'noise' : signalTypeEl.value;
+
+    function tick() {
+      const targetName = points[i % points.length];
+      lastTargetEl.textContent = `${kind}:${targetName}`;
+      highlight(positions[targetName].speakers);
+      setStatus(`Moving test: ${kind}`);
+      activeNodes.forEach(fn => { try { fn(); } catch (_) {} });
+      activeNodes = [];
+      if (signal === 'tone') playTone(targetName, Math.min(0.22, stepMs / 1000 + 0.02));
+      else if (signal === 'sweep') playSweep(targetName, Math.min(0.22, stepMs / 1000 + 0.02));
+      else playNoise(targetName, Math.min(0.22, stepMs / 1000 + 0.02));
+      i++;
+      if (i < loops) currentTimeouts.push(setTimeout(tick, stepMs));
+      else currentTimeouts.push(setTimeout(() => { stopAll(); setStatus('Motion test complete'); }, 250));
+    }
+    tick();
+  }
+
+  document.querySelectorAll('[data-test]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const test = btn.dataset.test;
+      if (positions[test]) runSingle(test);
+      else runMotionPattern(test);
+    });
+  });
+
+  $('runSequence').addEventListener('click', () => runSequence(false));
+  $('speakSequence').addEventListener('click', () => runSequence(true));
+  $('stopAll').addEventListener('click', stopAll);
+  volumeEl.addEventListener('input', () => {
+    if (masterGain && audioCtx) masterGain.gain.setTargetAtTime(Number(volumeEl.value) / 100, audioCtx.currentTime, 0.02);
+  });
+})();
+</script>
+</body>
+</html>
